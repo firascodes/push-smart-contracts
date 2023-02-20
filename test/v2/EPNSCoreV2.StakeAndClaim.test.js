@@ -960,6 +960,24 @@ describe("EPNS CoreV2 Protocol", function () {
         console.log(`CHANNEL_CREATOR Staked at EPOCH-${channeCreator_ClaimedBlock.toNumber()} and got ${rewards_channelCreator.toString()} Rewards`)
       })
 
+      it("TEST CHECKS-10: Staking and Unstaking at Same Epoch should not lead to increase in rewards-(for previously staked users)✅", async function(){
+        // const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();
+        const stakeAmount = tokensBN(100);
+        const bobDetails = await EPNSCoreV1Proxy.userFeesInfo(BOB);
+        const userWeight = await bobDetails.stakedWeight;
+        expect(userWeight).to.be.equal(0);
+        const fourEpochs=4;
+        // Bob Stakes at EPOCH 1 first
+        await stakePushTokens(BOBSIGNER, stakeAmount);
+        // At epoch 5, BOB stakes again and tries to unstake all his stake.
+        await passBlockNumers(fourEpochs * EPOCH_DURATION);
+        await stakePushTokens(BOBSIGNER, stakeAmount);
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).unstake();
+
+        const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+        console.log("Rewards Bob", rewards_bob.toString());
+      });
+
     });
 /**Test Cases Ends Here **/
   });
