@@ -3,9 +3,10 @@ const chalk = require('chalk');
 const fs = require("fs");
 
 require("@nomiclabs/hardhat-waffle");
+require("hardhat-exposed");
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-ethers");
-require("hardhat-gas-reporter");
+// require("hardhat-gas-reporter");
 
 const { ethers } = require("ethers");
 const { isAddress, getAddress, formatUnits, parseUnits } = ethers.utils;
@@ -123,6 +124,11 @@ module.exports = {
       },
     },
   },
+  exposed: {
+    include: ['**/EPNSCoreV2.sol'],
+    outDir: 'contracts/contracts-exposed',
+  },
+  
 };
 // ENABLE / DISABLE DEBUG
 const DEBUG = true;
