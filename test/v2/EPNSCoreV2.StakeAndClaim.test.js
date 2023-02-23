@@ -124,6 +124,27 @@ describe("EPNS CoreV2 Protocol", function () {
       
       await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
       await EPNSCoreV1Proxy.connect(ADMINSIGNER).initializeStake();
+
+      await PushToken.connect(BOBSIGNER).setHolderDelegation(
+        EPNSCoreV1Proxy.address,
+        true
+      );
+      await PushToken.connect(ADMINSIGNER).setHolderDelegation(
+        EPNSCoreV1Proxy.address,
+        true
+      );
+      await PushToken.connect(ALICESIGNER).setHolderDelegation(
+        EPNSCoreV1Proxy.address,
+        true
+      );
+      await PushToken.connect(CHARLIESIGNER).setHolderDelegation(
+        EPNSCoreV1Proxy.address,
+        true
+      );
+      await PushToken.connect(CHANNEL_CREATORSIGNER).setHolderDelegation(
+        EPNSCoreV1Proxy.address,
+        true
+      );
     });
     //*** Helper Functions - Related to Channel, Tokens and Stakes ***//
     const addPoolFees = async (signer, amount) => {
@@ -321,7 +342,37 @@ describe("EPNS CoreV2 Protocol", function () {
 
     describe("🟢 Stake Tests ", function()
     {
+      it("BOB & Alice Stakes(Same Amount) and Harvests together- Should get equal rewards ✅", async function(){
+        const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();
+        const oneEpochs = 1;
+        const fiveEpochs = 5;
+        const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
+        const perStakerShare = totalPoolFee.div(2)
 
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
+
+        await stakePushTokens(BOBSIGNER, tokensBN(100));
+        await passBlockNumers(10000);
+        await stakePushTokens(ALICESIGNER, tokensBN(100));
+        // Fast Forward 5 more epochs 
+        await passBlockNumers(fiveEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
+        await EPNSCoreV1Proxy.connect(ALICESIGNER).harvestAll();
+
+        const bobLastStakedEpoch = await getLastStakedEpoch(BOB);
+        const bobLastClaimedEpochId = await getLastRewardClaimedEpoch(BOB);
+        const aliceLastStakedEpoch = await getLastStakedEpoch(ALICE);
+        const aliceLastClaimedEpochId = await getLastRewardClaimedEpoch(ALICE);
+        const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+        const rewards_alice = await EPNSCoreV1Proxy.usersRewardsClaimed(ALICE);
+
+        await expect(bobLastStakedEpoch).to.be.equal(oneEpochs+1);
+        await expect(bobLastClaimedEpochId).to.be.equal(oneEpochs+fiveEpochs+1);
+        await expect(aliceLastStakedEpoch).to.be.equal(oneEpochs+1);
+        await expect(aliceLastClaimedEpochId).to.be.equal(oneEpochs+fiveEpochs+1);
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("10"));
+        expect(ethers.BigNumber.from(rewards_alice)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("10"));
     });
 
     describe("🟢 unStake Tests ", function()
@@ -685,12 +736,12 @@ describe("EPNS CoreV2 Protocol", function () {
       })
 
     });
-
+    
     describe("🟢 Harvesting Rewards Tests ", function()
     {
 
     });
-    
+
     describe("🟢 daoHarvest Rewards Tests ", function()
     {
 

@@ -1026,7 +1026,7 @@ contract EPNSCoreV2 is
     function unstake() external {
         require(userFeesInfo[msg.sender].stakedAmount > 0, "EPNSCoreV2::unstake: Caller is not a staker");
         // Before unstaking, reset holder weight
-        IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(address(this));
+        IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
      
         harvestAll();
         IERC20(PUSH_TOKEN_ADDRESS).transfer(msg.sender, userFeesInfo[msg.sender].stakedAmount);
@@ -1050,7 +1050,7 @@ contract EPNSCoreV2 is
 
     function harvestTill(uint256 _tillBlockNumber) public {
       // Before harvesting, reset holder weight
-      IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(address(this));
+      IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
       _adjustUserAndTotalStake(msg.sender, 0);
       
       uint256 currentEpoch = lastEpochRelative(genesisEpoch, _tillBlockNumber);   
