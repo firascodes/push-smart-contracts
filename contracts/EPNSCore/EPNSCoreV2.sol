@@ -965,12 +965,14 @@ contract EPNSCoreV2 is
     function _returnPushTokenWeight(
         address _account,
         uint256 _amount,
-        uint256 _atBlock
+        uint256 _atBlock // A: 100 B:200
     ) internal view returns (uint256) {
         return
             _amount.mul(
                 _atBlock.sub(IPUSH(PUSH_TOKEN_ADDRESS).holderWeight(_account))
             );
+            //A: 100 - 10 = 90
+            //B: 200 - 10 = 190
     }
 
     /**
@@ -1040,8 +1042,12 @@ contract EPNSCoreV2 is
         uint256 userWeight = _returnPushTokenWeight(
             _staker,
             _amount,
-            block.number
+            genesisEpoch + epochDuration*1
+            // TOOD: make block num constatn
         );
+        
+        console.log("user weight",userWeight,_staker);
+
         IERC20(PUSH_TOKEN_ADDRESS).safeTransferFrom(
             msg.sender,
             address(this),
@@ -1243,12 +1249,14 @@ contract EPNSCoreV2 is
     ) private {
         uint256 _lastEpochInitiliazed = lastEpochRelative(
             genesisEpoch,
-            lastEpochInitialized
+            lastEpochInitialized 
         );
         // Setting up Epoch Based Rewards
+        // if (_currentEpoch > _lastEpochInitiliazed) {
         if (_currentEpoch > _lastEpochInitiliazed || _currentEpoch == 1) {
             uint256 availableRewardsPerEpoch = (PROTOCOL_POOL_FEES -
                 previouslySetEpochRewards);
+            // epochRewards[_currentEpoch - 1] = availableRewardsPerEpoch; // @audit - we store rewards in previous epoch but userStakedWeight in currentEpoch - FIXED in harvestAll() function Line 1069
             epochRewards[_currentEpoch - 1] += availableRewardsPerEpoch; // @audit - we store rewards in previous epoch but userStakedWeight in currentEpoch - FIXED in harvestAll() function Line 1069
 
             lastEpochInitialized = block.number;

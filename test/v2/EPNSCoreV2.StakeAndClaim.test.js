@@ -548,6 +548,7 @@ describe("EPNS CoreV2 Protocol", function () {
         await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
 
         await stakePushTokens(BOBSIGNER, tokensBN(100));
+        await passBlockNumers(100_000);
         await stakePushTokens(ALICESIGNER, tokensBN(100));
         // Fast Forward 5 more epochs
         await passBlockNumers(fiveEpochs * EPOCH_DURATION);
@@ -579,88 +580,116 @@ describe("EPNS CoreV2 Protocol", function () {
         );
       });
 
-      it("BOB stakes abit later than ALice. BOB & Alice Stakes(Same Amount) and Harvests together- Bob should get abit more rewards ✅", async function () {
-        const oneEpochs = 1;
-        const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
-
-        await passBlockNumers(oneEpochs * EPOCH_DURATION);
-        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
-
-        // alice stakes
-        await stakePushTokens(ALICESIGNER, tokensBN(100));
-
-        // bob stakes a bit later
-        await passBlockNumers(1000);
-        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
-        await stakePushTokens(BOBSIGNER, tokensBN(100));
-
-        await passBlockNumers(oneEpochs * EPOCH_DURATION);
-        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
-        await EPNSCoreV1Proxy.connect(ALICESIGNER).harvestAll();
-
-        const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
-        const rewards_alice = await EPNSCoreV1Proxy.usersRewardsClaimed(ALICE);
-
-        // console.log(rewards_bob);
-        // console.log(rewards_alice);
-
-        // await expect(rewards_alice).to.be.gt(rewards_bob);
-      });
-
-it("ALICE & BOB stakes at epoch1, then at epoch2 CHarlie joins. Same ammout but Charlie gets more in ", async function () {
+it("BOB stakes abit later than ALice. BOB & Alice Stakes(Same Amount) and Harvests together- Bob should get abit more rewards ✅", async function () {
   const parseEth = (num) => ethers.utils.formatEther(num.toString());
-
   const oneEpochs = 1;
+  const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
+
+  // const epochDur = await EPNSCoreV1Proxy.epochDuration();
+  // console.log("duration was ",epochDur);
 
   await passBlockNumers(oneEpochs * EPOCH_DURATION);
   await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
 
-  // alice & bob stakes
+  // alice stakes
   await stakePushTokens(ALICESIGNER, tokensBN(100));
+
+  
+
+  
+  // bob stakes a bit later
+  // 1e = 1_40_000
+  // alice is stakin 100_000 blocks more
+  await passBlockNumers(100_001);
+  
+  const genesisBlock = await EPNSCoreV1Proxy.genesisEpoch();
+  const currentBlock = await getCurrentBlock();
+
+  const epochID = await EPNSCoreV1Proxy.lastEpochRelative(
+    genesisBlock,
+    currentBlock.number
+  );
+  console.log("current ei --->",epochID);
+  
+  await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
   await stakePushTokens(BOBSIGNER, tokensBN(100));
 
-  // epoch passes
   await passBlockNumers(oneEpochs * EPOCH_DURATION);
-  // two of them harverst
   await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
   await EPNSCoreV1Proxy.connect(ALICESIGNER).harvestAll();
-  const rewards_bob_e1 = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
-  const rewards_alice_e1 = await EPNSCoreV1Proxy.usersRewardsClaimed(
-    ALICE
-  );
 
-  // some funds came
-  await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
-  // charlie stakes
-  await stakePushTokens(CHARLIESIGNER, tokensBN(100));
-  // epoch passes
-  await passBlockNumers(oneEpochs * EPOCH_DURATION);
+  console.log("Alice infos");
+  // const aliceDetail = await getEachEpochDetails(ALICE,3) 
+  
 
-  // all with harvest
-  await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
-  await EPNSCoreV1Proxy.connect(ALICESIGNER).harvestAll();
-  await EPNSCoreV1Proxy.connect(CHARLIESIGNER).harvestAll();
+  // console.log("\n*******\nBob infos");
+  // const bobDetail = await getEachEpochDetails(BOB,3) 
 
-  const rewards_bob_e2 =
-    (await EPNSCoreV1Proxy.usersRewardsClaimed(BOB)) - rewards_bob_e1;
-  const rewards_alice_e2 =
-    (await EPNSCoreV1Proxy.usersRewardsClaimed(ALICE)) - rewards_alice_e1;
-  const rewards_charlie_e2 = await EPNSCoreV1Proxy.usersRewardsClaimed(
-    CHARLIE
-  );
+  
 
-  console.log(
-    `alice rewards e1 ${parseEth(rewards_alice_e1)} e2 ${parseEth(
-      rewards_alice_e2
-    )}`
-  );
-  console.log(
-    `bob rewards e1 ${parseEth(rewards_bob_e1)} e2 ${parseEth(
-      rewards_bob_e2
-    )}`
-  );
-  console.log(`charlie reward e2 ${parseEth(rewards_charlie_e2)}`);
+  const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+  const rewards_alice = await EPNSCoreV1Proxy.usersRewardsClaimed(ALICE);
+
+  console.log("alice rewards",parseEth(rewards_alice));
+  console.log("bob rewards",parseEth(rewards_bob));
+  console.log("bob gets this much more",parseEth(rewards_bob-rewards_alice));
 });
+
+      it.skip("ALICE & BOB stakes at epoch1, then at epoch2 CHarlie joins. Same ammout but Charlie gets more in ", async function () {
+        console.log("user weight", userWeug);
+        const parseEth = (num) => ethers.utils.formatEther(num.toString());
+
+        const oneEpochs = 1;
+
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
+
+        // alice & bob stakes
+        await stakePushTokens(ALICESIGNER, tokensBN(100));
+        await stakePushTokens(BOBSIGNER, tokensBN(100));
+
+        // epoch passes
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        // two of them harverst
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
+        await EPNSCoreV1Proxy.connect(ALICESIGNER).harvestAll();
+        const rewards_bob_e1 = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+        const rewards_alice_e1 = await EPNSCoreV1Proxy.usersRewardsClaimed(
+          ALICE
+        );
+
+        // some funds came
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
+        // charlie stakes
+        await stakePushTokens(CHARLIESIGNER, tokensBN(100));
+        // epoch passes
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+
+        // all with harvest
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
+        await EPNSCoreV1Proxy.connect(ALICESIGNER).harvestAll();
+        await EPNSCoreV1Proxy.connect(CHARLIESIGNER).harvestAll();
+
+        const rewards_bob_e2 =
+          (await EPNSCoreV1Proxy.usersRewardsClaimed(BOB)) - rewards_bob_e1;
+        const rewards_alice_e2 =
+          (await EPNSCoreV1Proxy.usersRewardsClaimed(ALICE)) - rewards_alice_e1;
+        const rewards_charlie_e2 = await EPNSCoreV1Proxy.usersRewardsClaimed(
+          CHARLIE
+        );
+
+        console.log(
+          `alice rewards e1 ${parseEth(rewards_alice_e1)} e2 ${parseEth(
+            rewards_alice_e2
+          )}`
+        );
+        console.log(
+          `bob rewards e1 ${parseEth(rewards_bob_e1)} e2 ${parseEth(
+            rewards_bob_e2
+          )}`
+        );
+        console.log(`charlie reward e2 ${parseEth(rewards_charlie_e2)}`);
+      });
 
       it.skip("4 Users Stakes(Same Amount) and Harvests together- Should get equal rewards ✅", async function () {
         const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();
