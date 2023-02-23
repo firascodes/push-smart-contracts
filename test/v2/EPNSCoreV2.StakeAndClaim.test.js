@@ -1031,6 +1031,7 @@ describe("EPNS CoreV2 Protocol", function () {
 /**Test Cases Ends Here **/
   });
 });
+});
 
 // PENDING Items
 /**
