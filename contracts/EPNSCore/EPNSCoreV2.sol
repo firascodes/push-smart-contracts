@@ -1067,6 +1067,21 @@ contract EPNSCoreV2 is
       IERC20(PUSH_TOKEN_ADDRESS).transfer(msg.sender, rewards);
     }
 
+    function harvestInPeriod(uint256 _startepoch, uint256 _endepoch) public {
+        // Before harvesting, reset holder weight
+        uint256 userStakedweight = userFeesInfo[msg.sender].epochToUserStakedWeight[_endepoch-1];
+        IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
+        _adjustUserAndTotalStake(msg.sender, userStakedweight);
+    
+        uint256 rewards = 0;
+        for(uint i = _startepoch-1; i < _endepoch; i++) { 
+                rewards = rewards.add(calculateEpochRewards(i));
+        }
+        usersRewardsClaimed[msg.sender] = rewards;
+        userFeesInfo[msg.sender].lastClaimedBlock = block.number;
+        IERC20(PUSH_TOKEN_ADDRESS).transfer(msg.sender, rewards);
+    }
+
     /**
      * @notice Allows Push Admin to harvest/claim the earned rewards for its stake in the protocol
      * @dev    only accessible by Push Admin - Similar to harvestTill() function

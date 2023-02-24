@@ -737,9 +737,67 @@ describe("EPNS CoreV2 Protocol", function () {
 
     });
     
-    describe("🟢 Harvesting Rewards Tests ", function()
+    describe.only("🟢 Harvesting Rewards Tests ", function()
     {
+      it("Bob stakes at epoch 2 and claims at epoch 9 using harvestAll()", async function(){
+        const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();
+        const oneEpochs= 1;
 
+        //pass 1 epoch add pool fees
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
+
+        //pass one epoch bob stakes 
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await stakePushTokens(BOBSIGNER, tokensBN(100));
+
+        //pass 3epoch bob harvests
+        await passBlockNumers(3 * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
+
+        //console rewards of bob
+        const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+        console.log("rewards_bob",rewards_bob.toString());
+
+        //last claimed epoch of bob
+        const bobLastClaimedEpochId = await getLastRewardClaimedEpoch(BOB);
+        console.log("bobLastClaimedEpochId",bobLastClaimedEpochId.toString()); 
+
+        const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("10"));
+
+        // getEachEpochDetails(BOB,bobLastClaimedEpochId);      
+      });
+
+      it("Bob stakes at epoch 2 and harvests at epoch 9 i) epoch 1 to 2 and again at epoch 15 ii) epoch 3 to 9", async function(){
+        const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();
+        const oneEpochs= 1;
+        //pass 1 epoch add pool fees
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
+
+        //pass one epoch bob stakes 
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await stakePushTokens(BOBSIGNER, tokensBN(100));
+
+        //pass 3epoch bob harvests
+        await passBlockNumers(3 * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(1,3);
+        await passBlockNumers(6 * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(3,6);
+
+        //console rewards of bob
+        const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+        console.log("rewards_bob",rewards_bob.toString());
+
+        //last claimed epoch of bob
+        const bobLastClaimedEpochId = await getLastRewardClaimedEpoch(BOB);
+        console.log("bobLastClaimedEpochId",bobLastClaimedEpochId.toString());  
+
+        const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("10"));
+
+      });
     });
 
     describe("🟢 daoHarvest Rewards Tests ", function()
