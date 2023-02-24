@@ -1,0 +1,22 @@
+diff --git a/node_modules/hardhat-exposed/dist/core.js b/node_modules/hardhat-exposed/dist/core.js
+index d068f51..8f24952 100644
+--- a/node_modules/hardhat-exposed/dist/core.js
++++ b/node_modules/hardhat-exposed/dist/core.js
+@@ -49,7 +49,7 @@ function getExposedContent(ast, relativizePath, deref, prefix = defaultPrefix) {
+     const imports = [ast.absolutePath].concat([...(0, utils_1.findAll)('ImportDirective', ast)]
+         .filter(i => i.symbolAliases.length > 0)
+         .map(i => i.absolutePath)).map(relativizePath);
+-    const rawContent = (0, format_lines_1.formatLines)(...(0, format_lines_1.spaceBetween)(['// SPDX-License-Identifier: UNLICENSED'], [`pragma solidity ${exposedVersionPragma};`], imports.map(i => `import "${i}";`), ...Array.from((0, utils_1.findAll)('ContractDefinition', ast), c => {
++    const rawContent = (0, format_lines_1.formatLines)(...(0, format_lines_1.spaceBetween)(['// SPDX-License-Identifier: UNLICENSED'], [`pragma solidity ${exposedVersionPragma};`],[`pragma experimental ABIEncoderV2;`],imports.map(i => `import "${i}";`), ...Array.from((0, utils_1.findAll)('ContractDefinition', ast), c => {
+         var _a;
+         const isLibrary = c.contractKind === 'library';
+         const contractHeader = [`contract ${contractPrefix}${c.name}`];
+@@ -93,7 +93,7 @@ function getExposedContent(ast, relativizePath, deref, prefix = defaultPrefix) {
+                 ];
+             }), 
+             // constructor
+-            makeConstructor(c, deref), 
++            // makeConstructor(c, deref), 
+             // accessor to internal variables
+             ...externalizableVariables.map(v => [
+                 [
