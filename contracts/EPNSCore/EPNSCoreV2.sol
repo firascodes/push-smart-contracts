@@ -1082,6 +1082,7 @@ contract EPNSCoreV2 is
         IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
 
         harvestAll();
+        // TODO: safe transfer
         IERC20(PUSH_TOKEN_ADDRESS).transfer(
             msg.sender,
             userFeesInfo[msg.sender].stakedAmount
@@ -1104,6 +1105,8 @@ contract EPNSCoreV2 is
      * @dev    Takes in the current block number as an arg - calculates reward till the current block number
      *         Rewards are calculated and added for all epochs between, user's lastClaimedEpoch and current epoch Id
      **/
+
+    // TODO make external
     function harvestAll() public {
         harvestTill(block.number);
     }
@@ -1133,6 +1136,7 @@ contract EPNSCoreV2 is
             rewards
         );
         userFeesInfo[msg.sender].lastClaimedBlock = _tillBlockNumber;
+        // TODO: safe transfer
         IERC20(PUSH_TOKEN_ADDRESS).transfer(msg.sender, rewards);
     }
 
@@ -1263,6 +1267,7 @@ contract EPNSCoreV2 is
             previouslySetEpochRewards = PROTOCOL_POOL_FEES;
         }
         // Setting up Epoch Based TotalWeight
+        // TODO:lastTotalStakeEpochInitialized state read multiple times
         if (
             lastTotalStakeEpochInitialized == 0 ||
             lastTotalStakeEpochInitialized == _currentEpoch
