@@ -991,8 +991,8 @@ contract EPNSCoreV2 is
         lastEpochInitialized = genesisEpoch;
         lastTotalStakedBlock = genesisEpoch;
 
-        IERC20(PUSH_TOKEN_ADDRESS).safeTransferFrom(msg.sender, address(this), 1e18);
-        _stake(address(this), 1e18);
+        IERC20(PUSH_TOKEN_ADDRESS).approve(address(this), 1e18);
+        _stake(msg.sender, 1e18);
     }
 
    /**
@@ -1031,7 +1031,7 @@ contract EPNSCoreV2 is
         IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
      
         harvestAll();
-        IERC20(PUSH_TOKEN_ADDRESS).transfer(msg.sender, userFeesInfo[msg.sender].stakedAmount);
+        IERC20(PUSH_TOKEN_ADDRESS).safeTransfer(msg.sender, userFeesInfo[msg.sender].stakedAmount);
       
         // Adjust user and total rewards, piggyback method
          _adjustUserAndTotalStake(msg.sender, -userFeesInfo[msg.sender].stakedWeight);
@@ -1063,13 +1063,12 @@ contract EPNSCoreV2 is
      
       uint256 rewards = 0;
       for(uint i = lastClaimedEpoch-1; i < currentEpoch; i++) { //@audit-info - changed lastClaimedEpoch to lastClaimedEpoch-1 - and then rewards work
-            uint256 claimableReward = calculateEpochRewards(i);
-            rewards = rewards.add(calculateEpochRewards(i));
-
+        uint256 claimableReward = calculateEpochRewards(i);
+        rewards = rewards.add(calculateEpochRewards(i));
       }
       usersRewardsClaimed[msg.sender] = usersRewardsClaimed[msg.sender].add(rewards);
       userFeesInfo[msg.sender].lastClaimedBlock = _tillBlockNumber;
-      IERC20(PUSH_TOKEN_ADDRESS).transfer(msg.sender, rewards);
+      IERC20(PUSH_TOKEN_ADDRESS).safeTransfer(msg.sender, rewards);
     }
 
     function harvestInPeriod(uint256 _startepoch, uint256 _endepoch) external {
@@ -1078,13 +1077,13 @@ contract EPNSCoreV2 is
 
       uint256 lastClaimedEpoch = lastEpochRelative(genesisEpoch, userFeesInfo[msg.sender].lastClaimedBlock);
       uint256 currentEpoch = lastEpochRelative(genesisEpoch, block.number);   
-      require(_startepoch == lastClaimedEpoch,"EPNSCoreV2::harvest::havest epoch should be sequential");
+      require(_startepoch == lastClaimedEpoch,"EPNSCoreV2::harvest::epoch should be sequential without repetation");
       require(currentEpoch >= _endepoch,"EPNSCoreV2::harverst::cannot harvest future epoch");
 
       uint256 rewards = 0;
       for(uint i = _startepoch; i < _endepoch; i++) { 
         uint256 claimableReward = calculateEpochRewards(i);
-        rewards = rewards.add(calculateEpochRewards(i));
+        rewards = rewards.add(claimableReward);
       }
       usersRewardsClaimed[msg.sender] = usersRewardsClaimed[msg.sender].add(rewards);
       
