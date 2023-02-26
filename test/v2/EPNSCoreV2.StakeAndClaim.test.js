@@ -246,6 +246,7 @@ describe("EPNS CoreV2 Protocol", function () {
 
 /** Test Cases Starts Here **/
 
+console.log("nope",ethers.utils.parseEther("100"));
    /* CHECKPOINTS: lastEpochRelative() function 
     * Should Reverts on overflow
     * Should calculate relative epoch numbers accurately
@@ -391,7 +392,7 @@ describe("EPNS CoreV2 Protocol", function () {
         await EPNSCoreV1Proxy.connect(BOBSIGNER).unstake();
         const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
 
-        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("100"));
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther(".000001"));
 
       })
 
@@ -499,7 +500,7 @@ describe("EPNS CoreV2 Protocol", function () {
 
         await expect(bobLastStakedEpoch).to.be.equal(oneEpochs);
         await expect(bobLastClaimedEpochId).to.be.equal(fiveEpochs+1);
-        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee), ethers.utils.parseEther("10"));
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee), ethers.utils.parseEther("0.000001"));
       })
 
       it("BOB Stakes after EPOCH 1 and Harvests alone- Should get all rewards ✅", async function(){
@@ -522,7 +523,7 @@ describe("EPNS CoreV2 Protocol", function () {
  
         await expect(bobLastStakedEpoch).to.be.equal(oneEpochs+1);
         await expect(bobLastClaimedEpochId).to.be.equal(oneEpochs+fiveEpochs+1);
-        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee), ethers.utils.parseEther("10"));
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee), ethers.utils.parseEther("0.000001"));
       })
 
       it("BOB & Alice Stakes(Same Amount) and Harvests together- Should get equal rewards ✅", async function(){
@@ -553,8 +554,8 @@ describe("EPNS CoreV2 Protocol", function () {
         await expect(bobLastClaimedEpochId).to.be.equal(oneEpochs+fiveEpochs+1);
         await expect(aliceLastStakedEpoch).to.be.equal(oneEpochs+1);
         await expect(aliceLastClaimedEpochId).to.be.equal(oneEpochs+fiveEpochs+1);
-        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("10"));
-        expect(ethers.BigNumber.from(rewards_alice)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("10"));
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("0.000001"));
+        expect(ethers.BigNumber.from(rewards_alice)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("0.000001"));
       })
 
       it("4 Users Stakes(Same Amount) and Harvests together- Should get equal rewards ✅", async function(){
@@ -584,10 +585,10 @@ describe("EPNS CoreV2 Protocol", function () {
         const rewards_charlie = await EPNSCoreV1Proxy.usersRewardsClaimed(CHARLIE);
         const rewards_channelCreator = await EPNSCoreV1Proxy.usersRewardsClaimed(CHANNEL_CREATOR);
         
-        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("100"));
-        expect(ethers.BigNumber.from(rewards_alice)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("100"));
-        expect(ethers.BigNumber.from(rewards_charlie)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("100"));
-        expect(ethers.BigNumber.from(rewards_channelCreator)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("100"));
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("0.000001"));
+        expect(ethers.BigNumber.from(rewards_alice)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("0.000001"));
+        expect(ethers.BigNumber.from(rewards_charlie)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("0.000001"));
+        expect(ethers.BigNumber.from(rewards_channelCreator)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("0.000001"));
 
       })
 
@@ -737,7 +738,7 @@ describe("EPNS CoreV2 Protocol", function () {
 
     });
     
-    describe.only("🟢 Harvesting Rewards Tests ", function()
+    describe("🟢 Harvesting Rewards Tests ", function()
     {
       it("Bob stakes at epoch 2 and claims at epoch 9 using harvestAll()", async function(){
         const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();
@@ -764,7 +765,7 @@ describe("EPNS CoreV2 Protocol", function () {
         console.log("bobLastClaimedEpochId",bobLastClaimedEpochId.toString()); 
 
         const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
-        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("10"));
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("0.000001"));
 
         // getEachEpochDetails(BOB,bobLastClaimedEpochId);      
       });
@@ -782,9 +783,10 @@ describe("EPNS CoreV2 Protocol", function () {
 
         //pass 3epoch bob harvests
         await passBlockNumers(3 * EPOCH_DURATION);
-        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(1,3);
+        // await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(1,3);
         await passBlockNumers(6 * EPOCH_DURATION);
-        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(3,6);
+        // await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(3,6);
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
 
         //console rewards of bob
         const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
@@ -795,7 +797,7 @@ describe("EPNS CoreV2 Protocol", function () {
         console.log("bobLastClaimedEpochId",bobLastClaimedEpochId.toString());  
 
         const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
-        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("10"));
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("0.000001"));
 
       });
     });
