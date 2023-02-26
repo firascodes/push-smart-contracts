@@ -1,6 +1,6 @@
 const { ethers, waffle } = require("hardhat");
 
-const { tokensBN } = require("../../helpers/utils");
+const { tokensBN, bn } = require("../../helpers/utils");
 
 const { epnsContractFixture, tokenFixture } = require("../common/fixturesV2");
 const { expect } = require("../common/expect");
@@ -122,8 +122,8 @@ describe("EPNS CoreV2 Protocol", function () {
         ADD_CHANNEL_MIN_POOL_CONTRIBUTION.mul(10000)
       );
       
-      await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
       await EPNSCoreV1Proxy.connect(ADMINSIGNER).initializeStake();
+      console.log("init be the admin",ADMIN);
 
       await PushToken.connect(BOBSIGNER).setHolderDelegation(
         EPNSCoreV1Proxy.address,
@@ -246,7 +246,6 @@ describe("EPNS CoreV2 Protocol", function () {
 
 /** Test Cases Starts Here **/
 
-console.log("nope",ethers.utils.parseEther("100"));
    /* CHECKPOINTS: lastEpochRelative() function 
     * Should Reverts on overflow
     * Should calculate relative epoch numbers accurately
@@ -333,7 +332,7 @@ console.log("nope",ethers.utils.parseEther("100"));
      * 
      * UNSTAKE
      * Unstaking allows users to Claim their rewards as well
-     * Unstake function is only accessible for actual stakers
+     * Unstake function is  accessible for actual stakers
      * Unstaked users cannot claim any further rewards
      * Staking and Unstaking in same epoch doesn't lead to any rewards
      * User Fees Info is accurately updated after unstake
@@ -769,6 +768,82 @@ console.log("nope",ethers.utils.parseEther("100"));
 
         // getEachEpochDetails(BOB,bobLastClaimedEpochId);      
       });
+
+      it("Bob stakes at epoch 2 and harvests at epoch 9 i) epoch 1 to 2 and again at epoch 15 ii) epoch 3 to 9", async function(){
+        const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();
+        const oneEpochs= 1;
+        //pass 1 epoch add pool fees
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(200));
+
+        //pass one epoch bob stakes 
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await stakePushTokens(BOBSIGNER, tokensBN(100));
+
+        //pass 3epoch bob harvests
+        await passBlockNumers(3 * EPOCH_DURATION);
+        // await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(1,3);
+        await passBlockNumers(6 * EPOCH_DURATION);
+        // await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(3,6);
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
+
+        //console rewards of bob
+        const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+        console.log("rewards_bob",rewards_bob.toString());
+
+        //last claimed epoch of bob
+        const bobLastClaimedEpochId = await getLastRewardClaimedEpoch(BOB);
+        console.log("bobLastClaimedEpochId",bobLastClaimedEpochId.toString());  
+
+        const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
+        expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee.div(2)), ethers.utils.parseEther("0.000001"));
+
+      });
+    });
+
+    describe.only("🟢 Pagination test ", function()
+    {
+      it("Allows staker with harvestInPeriod() method", async function(){
+        const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();
+        const oneEpochs= 1;
+        var bal = await PushToken.balanceOf(EPNSCoreV1Proxy.address);
+        console.log("bal",weiToEth(bal));
+
+
+        //pass 1 epoch add pool fees
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+        var bal = await PushToken.balanceOf(EPNSCoreV1Proxy.address);
+        console.log("bal",weiToEth(bal));
+
+
+        //pass one epoch bob stakes 
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await stakePushTokens(BOBSIGNER, tokensBN(99));
+
+        var res = await EPNSCoreV1Proxy.userFeesInfo(BOB);
+        console.log("res was",res);
+
+        var res = await EPNSCoreV1Proxy.userFeesInfo(ADMIN);
+        console.log("res admin was",res);
+
+        //pass 3epoch bob harvests
+        await passBlockNumers(3 * EPOCH_DURATION);
+        var bal = await PushToken.balanceOf(EPNSCoreV1Proxy.address);
+        console.log("bal",weiToEth(bal));
+        
+        var rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+        console.log("rewards_bob",weiToEth(rewards_bob.toString()));
+
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(1,4);
+        var rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+        console.log("rewards_bob",weiToEth(rewards_bob.toString()))
+        expect(
+          ethers.BigNumber.from(rewards_bob)
+        ).to.be.closeTo(
+          ethers.utils.parseEther("99.9999"), 
+          ethers.utils.parseEther("0.00001")
+      )});
 
       it("Bob stakes at epoch 2 and harvests at epoch 9 i) epoch 1 to 2 and again at epoch 15 ii) epoch 3 to 9", async function(){
         const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();

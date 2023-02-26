@@ -45,11 +45,11 @@ module.exports = {
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
-      forking: {
-        url:
-          `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API}`,
-          blockNumber: 15917401
-      },
+      // forking: {
+      //   url:
+      //     `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API}`,
+      //     blockNumber: 15917401
+      // },
     },
     localhost: {
       url: "http://localhost:8545",

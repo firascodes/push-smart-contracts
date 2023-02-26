@@ -1012,6 +1012,8 @@ contract EPNSCoreV2 is
         userFeesInfo[_staker].stakedAmount = userFeesInfo[_staker].stakedAmount + _amount;
         userFeesInfo[_staker].lastClaimedBlock = 
             userFeesInfo[_staker].lastClaimedBlock == 0 ? genesisEpoch : userFeesInfo[_staker].lastClaimedBlock;
+        
+
     
        // Adjust user and total rewards, piggyback method
         _adjustUserAndTotalStake(_staker, userWeight);
@@ -1049,13 +1051,16 @@ contract EPNSCoreV2 is
     }
 
     function harvestTill(uint256 _tillBlockNumber) public {
+
+    
       // Before harvesting, reset holder weight
       IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
       _adjustUserAndTotalStake(msg.sender, 0);
       
       uint256 currentEpoch = lastEpochRelative(genesisEpoch, _tillBlockNumber);   
+     
       uint256 lastClaimedEpoch = lastEpochRelative(genesisEpoch, userFeesInfo[msg.sender].lastClaimedBlock); 
-
+     
       uint256 rewards = 0;
       for(uint i = lastClaimedEpoch-1; i < currentEpoch; i++) { //@audit-info - changed lastClaimedEpoch to lastClaimedEpoch-1 - and then rewards work
             uint256 claimableReward = calculateEpochRewards(i);
@@ -1067,19 +1072,27 @@ contract EPNSCoreV2 is
       IERC20(PUSH_TOKEN_ADDRESS).transfer(msg.sender, rewards);
     }
 
-    function harvestInPeriod(uint256 _startepoch, uint256 _endepoch) public {
-      // Before harvesting, reset holder weight
+    function harvestInPeriod(uint256 _startepoch, uint256 _endepoch) external {
       IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
       _adjustUserAndTotalStake(msg.sender, 0);
 
+      uint256 lastClaimedEpoch = lastEpochRelative(genesisEpoch, userFeesInfo[msg.sender].lastClaimedBlock);
+      uint256 currentEpoch = lastEpochRelative(genesisEpoch, block.number);   
+      require(_startepoch == lastClaimedEpoch,"EPNSCoreV2::harvest::havest epoch should be sequential");
+      require(currentEpoch >= _endepoch,"EPNSCoreV2::harverst::cannot harvest future epoch");
+
       uint256 rewards = 0;
-      for(uint i = _startepoch; i <= _endepoch; i++) { 
+      for(uint i = _startepoch; i < _endepoch; i++) { 
         uint256 claimableReward = calculateEpochRewards(i);
         rewards = rewards.add(calculateEpochRewards(i));
       }
       usersRewardsClaimed[msg.sender] = usersRewardsClaimed[msg.sender].add(rewards);
-      userFeesInfo[msg.sender].lastClaimedBlock = _endepoch;
-      IERC20(PUSH_TOKEN_ADDRESS).transfer(msg.sender, rewards);
+      
+      // set the lastClaimedBlock = blocknumer at the endof `_endepoch`
+      // TODO: peer reiview this part
+      uint256 _epoch_to_block_number = genesisEpoch + _endepoch.sub(1) * epochDuration;
+      userFeesInfo[msg.sender].lastClaimedBlock = _epoch_to_block_number;
+      IERC20(PUSH_TOKEN_ADDRESS).safeTransfer(msg.sender, rewards);
     }
 
     /**
