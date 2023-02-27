@@ -737,7 +737,7 @@ describe("EPNS CoreV2 Protocol", function () {
 
     });
     
-    describe.only("🟢 Harvesting Rewards Tests ", function()
+    describe("🟢 Harvesting Rewards Tests ", function()
     {
       it("Bob stakes at epoch 2 and claims at epoch 9 using harvestAll()", async function(){
         const genesisEpoch = await EPNSCoreV1Proxy.genesisEpoch();
