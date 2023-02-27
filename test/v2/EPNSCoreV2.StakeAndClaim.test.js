@@ -753,13 +753,8 @@ describe("EPNS CoreV2 Protocol", function () {
         // Fast Forward 5 more epochs 
         await passBlockNumers(fiveEpochs * EPOCH_DURATION);
         await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestAll();
-
-        const bobLastStakedEpoch = await getLastStakedEpoch(BOB);
-        const bobLastClaimedEpochId = await getLastRewardClaimedEpoch(BOB);
         const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
  
-        console.log("Last claimed epoch id: ", bobLastClaimedEpochId.toString());
-        console.log("Rewards Bob: ", ethers.utils.formatEther(rewards_bob.toString()));
         expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee), ethers.utils.parseEther("10"));
 
         // getEachEpochDetails(BOB,bobLastClaimedEpochId);      
@@ -784,17 +779,81 @@ describe("EPNS CoreV2 Protocol", function () {
         await passBlockNumers(6 * EPOCH_DURATION);
         await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(3,6);
 
-        //console rewards of bob
         const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
-        console.log("rewards_bob",rewards_bob.toString());
-
-        //last claimed epoch of bob
-        const bobLastClaimedEpochId = await getLastRewardClaimedEpoch(BOB);
-        console.log("bobLastClaimedEpochId",bobLastClaimedEpochId.toString());  
 
         expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(ethers.BigNumber.from(totalPoolFee), ethers.utils.parseEther("10"));
 
       });
+
+      it("Bob cannot harvest is future epochs", async function () {
+        //pass 1 epoch add pool fees
+        const oneEpochs = 1;
+        const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
+
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+
+        //pass one epoch bob stakes
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await stakePushTokens(BOBSIGNER, tokensBN(100));
+
+        //pass 3 epoch bob harvests
+        await passBlockNumers(3 * EPOCH_DURATION);
+        const tx = EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(1, 7);
+
+        await expect(tx).to.be.revertedWith(
+          "EPNSCoreV2::harvestInPeriod: End epoch cannot be greater than current epoch"
+        );
+      });
+
+      it("Bob cannot harvest if start epoch > end epoch", async function () {
+        //pass 1 epoch add pool fees
+        const oneEpochs = 1;
+        const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
+
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+
+        //pass one epoch bob stakes
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await stakePushTokens(BOBSIGNER, tokensBN(100));
+
+        //pass 3 epoch bob harvests
+        await passBlockNumers(3 * EPOCH_DURATION);
+        const tx = EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(3, 1);
+
+        await expect(tx).to.be.revertedWith(
+          "EPNSCoreV2::harvestInPeriod: Start epoch cannot be greater than end epoch"
+        );
+      });
+
+      it("Bob cannot harvest if start epoch < last claimed epoch", async function () {
+        //pass 1 epoch add pool fees
+        const oneEpochs = 1;
+        const totalPoolFee = await EPNSCoreV1Proxy.PROTOCOL_POOL_FEES();
+
+        //pass 1 epoch add pool fees
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+
+        //pass one epoch bob stakes
+        await passBlockNumers(oneEpochs * EPOCH_DURATION);
+        await stakePushTokens(BOBSIGNER, tokensBN(100));
+
+        //pass 3 epoch bob harvests
+        await passBlockNumers(3 * EPOCH_DURATION);
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(1, 3);
+
+        //pass 3 epoch bob harvests again from 2 to 4
+        await passBlockNumers(3 * EPOCH_DURATION);
+        const tx = EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(2, 4);
+
+        await expect(tx).to.be.revertedWith(
+          "EPNSCoreV2::harvestInPeriod: Start epoch cannot be less than last claimed epoch"
+        );
+
+      });
+
     });
 
     describe("🟢 daoHarvest Rewards Tests ", function()
