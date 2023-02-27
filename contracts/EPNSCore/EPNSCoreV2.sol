@@ -1072,7 +1072,7 @@ contract EPNSCoreV2 is
         uint256 currentEpoch = lastEpochRelative(genesisEpoch, block.number);   
         uint256 lastClaimedEpoch = lastEpochRelative(genesisEpoch, userFeesInfo[msg.sender].lastClaimedBlock); 
         require(_startepoch<_endepoch, "EPNSCoreV2::harvestInPeriod: Start epoch cannot be greater than end epoch");
-        require(_startepoch>=lastClaimedEpoch, "EPNSCoreV2::harvestInPeriod: Start epoch cannot be less than last claimed epoch");
+        require(_startepoch==lastClaimedEpoch, "EPNSCoreV2::harvestInPeriod: Start epoch cannot be less than last claimed epoch");
         require(_endepoch<=currentEpoch, "EPNSCoreV2::harvestInPeriod: End epoch cannot be greater than current epoch");
 
         IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
