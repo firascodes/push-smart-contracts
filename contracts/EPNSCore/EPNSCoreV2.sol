@@ -1069,16 +1069,21 @@ contract EPNSCoreV2 is
 
     function harvestInPeriod(uint256 _startepoch, uint256 _endepoch) public {
         // Before harvesting, reset holder weight
-        uint256 userStakedweight = userFeesInfo[msg.sender].epochToUserStakedWeight[_endepoch-1];
+        uint256 currentEpoch = lastEpochRelative(genesisEpoch, _tillBlockNumber);   
+        uint256 lastClaimedEpoch = lastEpochRelative(genesisEpoch, userFeesInfo[msg.sender].lastClaimedBlock); 
+        require(_startepoch>_endepoch, "EPNSCoreV2::harvestInPeriod: Start epoch cannot be greater than end epoch");
+        require(_startepoch>lastClaimedEpoch, "EPNSCoreV2::harvestInPeriod: Start epoch cannot be less than last claimed epoch");
+        require(_endepoch<=currentEpoch, "EPNSCoreV2::harvestInPeriod: End epoch cannot be greater than current epoch");
+
         IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
-        _adjustUserAndTotalStake(msg.sender, userStakedweight);
+        _adjustUserAndTotalStake(msg.sender, 0);
     
         uint256 rewards = 0;
         for(uint i = _startepoch-1; i < _endepoch; i++) { 
                 rewards = rewards.add(calculateEpochRewards(i));
         }
-        usersRewardsClaimed[msg.sender] = rewards;
-        userFeesInfo[msg.sender].lastClaimedBlock = block.number;
+        usersRewardsClaimed[msg.sender] = usersRewardsClaimed[msg.sender].add(rewards);
+        userFeesInfo[msg.sender].lastClaimedBlock = genesisEpoch + (_endepoch.sub(1) * epochDuration);
         IERC20(PUSH_TOKEN_ADDRESS).transfer(msg.sender, rewards);
     }
 
