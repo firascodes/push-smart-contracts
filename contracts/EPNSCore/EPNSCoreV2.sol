@@ -1008,14 +1008,16 @@ contract EPNSCoreV2 is
 
     function _stake(address _staker, uint256 _amount) private {
         //3rd Version
-        uint256 currentEpoch = lastEpochRelative(genesisEpoch, block.number);  
-        uint256 endOfCurrentEpoch = (genesisEpoch.add(epochDuration.mul(currentEpoch))).add(epochDuration);
-        uint256 blockNumberToConsider = endOfCurrentEpoch.sub(block.number);
-        uint256 userWeight = _returnPushTokenWeight(_staker, _amount, blockNumberToConsider);
+        // uint256 currentEpoch = lastEpochRelative(genesisEpoch, block.number);  
+        // uint256 endOfCurrentEpoch = (genesisEpoch.add(epochDuration.mul(currentEpoch))).add(epochDuration);
+        // uint256 blockNumberToConsider = endOfCurrentEpoch.sub(block.number);
+        // uint256 blockNumberToConsider = block.number.add(endOfCurrentEpoch.sub(block.number));
+        // uint256 userWeight = _returnPushTokenWeight(_staker, _amount, blockNumberToConsider);
 
         //2nd version
-        // uint256 blockNumberToConsider = genesisEpoch.add(epochDuration.mul(currentEpoch));
-        // uint256 userWeight = _returnPushTokenWeight(_staker, _amount, blockNumberToConsider);
+        uint256 currentEpoch = lastEpochRelative(genesisEpoch, block.number);  
+        uint256 blockNumberToConsider = genesisEpoch.add(epochDuration.mul(currentEpoch));
+        uint256 userWeight = _returnPushTokenWeight(_staker, _amount, blockNumberToConsider);
 
         // First version
         //uint256 userWeight = _returnPushTokenWeight(_staker, _amount, block.number);
