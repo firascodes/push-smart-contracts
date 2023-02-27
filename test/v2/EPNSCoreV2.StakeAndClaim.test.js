@@ -911,7 +911,7 @@ describe("EPNS CoreV2 Protocol", function () {
         });
       });
 
-      describe.only("🟢 Pagination test ", function () {
+      describe("🟢 Pagination test ", function () {
         const oneEpochs = 1;
         it("allows staker to harvest with harvestInPeriod() method", async function () {
           //pass 1 epoch add pool fees

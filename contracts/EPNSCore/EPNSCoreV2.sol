@@ -1006,16 +1006,18 @@ contract EPNSCoreV2 is
     }
 
     function _stake(address _staker, uint256 _amount) private {
-        uint256 userWeight = _returnPushTokenWeight(_staker, _amount, block.number);
+        uint256 currentEpoch = lastEpochRelative(genesisEpoch, block.number);   
+        uint256 blockNumberToConsider = genesisEpoch.add(epochDuration.mul(currentEpoch));
+        uint256 userWeight = _returnPushTokenWeight(_staker, _amount, blockNumberToConsider);
+
+        //uint256 userWeight = _returnPushTokenWeight(_staker, _amount, block.number);
         IERC20(PUSH_TOKEN_ADDRESS).safeTransferFrom(msg.sender, address(this), _amount);
 
         userFeesInfo[_staker].stakedAmount = userFeesInfo[_staker].stakedAmount + _amount;
         userFeesInfo[_staker].lastClaimedBlock = 
             userFeesInfo[_staker].lastClaimedBlock == 0 ? genesisEpoch : userFeesInfo[_staker].lastClaimedBlock;
-        
 
-    
-       // Adjust user and total rewards, piggyback method
+        // Adjust user and total rewards, piggyback method
         _adjustUserAndTotalStake(_staker, userWeight);
     }
 
@@ -1099,21 +1101,22 @@ contract EPNSCoreV2 is
      * @dev    only accessible by Push Admin - Similar to harvestTill() function
     **/
     function daoHarvest() external onlyPushChannelAdmin(){ //@audit-info - Need to be reviewed
-        uint256 weightContract = userFeesInfo[address(this)].stakedWeight;
-        IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(address(this));
-        _adjustUserAndTotalStake(address(this), 0);
+        // TODO: why we need `weightContract`
+        // uint256 weightContract = userFeesInfo[msg.sender].stakedWeight;
+        IPUSH(PUSH_TOKEN_ADDRESS).resetHolderWeight(msg.sender);
+        _adjustUserAndTotalStake(msg.sender, 0);
 
         uint256 currentEpoch = lastEpochRelative(genesisEpoch, block.number);
-        uint256 lastClaimedEpoch = lastEpochRelative(genesisEpoch, userFeesInfo[address(this)].lastClaimedBlock);
+        uint256 lastClaimedEpoch = lastEpochRelative(genesisEpoch, userFeesInfo[msg.sender].lastClaimedBlock);
         
         uint256 rewards = 0;
         for(uint i = lastClaimedEpoch; i < currentEpoch; i++) {
-                rewards = rewards.add(calculateEpochRewards(i));
+            rewards = rewards.add(calculateEpochRewards(i));
         }
 
-        usersRewardsClaimed[address(this)] = usersRewardsClaimed[address(this)].add(rewards);
-        userFeesInfo[address(this)].lastClaimedBlock = block.number;
-
+        usersRewardsClaimed[msg.sender] = usersRewardsClaimed[msg.sender].add(rewards);
+        userFeesInfo[msg.sender].lastClaimedBlock = block.number;
+        IERC20(PUSH_TOKEN_ADDRESS).safeTransfer(msg.sender, rewards);
     }
         
      // FOR TEST - To Be Reviewed - //
