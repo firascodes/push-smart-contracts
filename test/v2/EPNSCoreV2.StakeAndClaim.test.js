@@ -1063,20 +1063,21 @@ describe("EPNS CoreV2 Protocol", function () {
           await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
           await passBlockNumers(oneEpochs * EPOCH_DURATION);
 
-
           // harvesting time
           await EPNSCoreV1Proxy.connect(ADMINSIGNER).harvestAll();
-          await EPNSCoreV1Proxy.connect(ALICESIGNER).harvestAll();          
+          await EPNSCoreV1Proxy.connect(ALICESIGNER).harvestAll();
           await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(1, 3);
           await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(3, 5);
           await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(5, 6);
 
           const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
-          const rewards_alice = await EPNSCoreV1Proxy.usersRewardsClaimed(ALICE);
+          const rewards_alice = await EPNSCoreV1Proxy.usersRewardsClaimed(
+            ALICE
+          );
           const rewards_admin = await EPNSCoreV1Proxy.usersRewardsClaimed(
             ADMIN
           );
-          
+
           // TODO: fix with the constant block number
           expect(ethers.BigNumber.from(rewards_bob)).to.be.closeTo(
             ethers.utils.parseEther("400").sub(rewards_admin).div(2),
@@ -1107,12 +1108,111 @@ describe("EPNS CoreV2 Protocol", function () {
           await passBlockNumers(3 * EPOCH_DURATION);
           await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(5, 8);
           const rewards_bob_2 = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
-          
+
           expect(rewards_bob_2).to.equal(rewards_bob_1);
         });
       });
 
-      describe("🟢 daoHarvest Rewards Tests ", function () {});
+      describe.only("🟢 DAO harvest tests", function () {
+        const oneEpochs = 1;
+        it("allows admin to harvest", async function () {
+          //pass 1 epoch add pool fees
+          await passBlockNumers(oneEpochs * EPOCH_DURATION);
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).daoHarvest();
+
+          const rewards_admin = await EPNSCoreV1Proxy.usersRewardsClaimed(
+            ADMIN
+          );
+
+          expect(ethers.BigNumber.from(rewards_admin)).to.equal(
+            ethers.utils.parseEther("100")
+          );
+        });
+
+        it("yields `0` if no pool funds added", async function () {
+          //pass 1 epoch add pool fees
+          await passBlockNumers(oneEpochs * EPOCH_DURATION);
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).daoHarvest();
+          const rewards_admin = await EPNSCoreV1Proxy.usersRewardsClaimed(
+            ADMIN
+          );
+
+          expect(ethers.BigNumber.from(rewards_admin)).to.equal(
+            ethers.utils.parseEther("0")
+          );
+        });
+
+        it("allows only admin to harvest", async function () {
+          //pass 1 epoch add pool fees
+          await passBlockNumers(oneEpochs * EPOCH_DURATION);
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+
+          const tx = EPNSCoreV1Proxy.connect(ALICESIGNER).daoHarvest();
+          await expect(tx).to.be.revertedWith(
+            "EPNSCoreV1_5::onlyPushChannelAdmin: Caller not pushChannelAdmin"
+          );
+
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).daoHarvest();
+          const rewards_admin = await EPNSCoreV1Proxy.usersRewardsClaimed(
+            ADMIN
+          );
+          expect(ethers.BigNumber.from(rewards_admin)).to.equal(
+            ethers.utils.parseEther("100")
+          );
+        });
+
+        it("admin rewards and user rewards match the pool fees", async function () {
+          //pass 1 epoch add pool fees
+          await passBlockNumers(oneEpochs * EPOCH_DURATION);
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+
+          //pass one epoch bob stakes
+          await passBlockNumers(oneEpochs * EPOCH_DURATION);
+          await stakePushTokens(BOBSIGNER, tokensBN(100));
+
+          await passBlockNumers(3 * EPOCH_DURATION);
+          await EPNSCoreV1Proxy.connect(BOBSIGNER).harvestInPeriod(1, 5);
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).daoHarvest();
+
+          const rewards_bob = await EPNSCoreV1Proxy.usersRewardsClaimed(BOB);
+          const rewards_admin = await EPNSCoreV1Proxy.usersRewardsClaimed(
+            ADMIN
+          );
+
+          expect(
+            ethers.BigNumber.from(rewards_bob.add(rewards_admin))
+          ).to.be.closeTo(
+            ethers.utils.parseEther("100"),
+            ethers.utils.parseEther("0.00000000001")
+          );
+        });
+
+        it("dao gets all rewards if no one stakes", async function () {
+          //pass 1 epoch add pool fees
+          await passBlockNumers(oneEpochs * EPOCH_DURATION);
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+
+          await passBlockNumers(oneEpochs * EPOCH_DURATION);
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+
+          await passBlockNumers(oneEpochs * EPOCH_DURATION);
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).addPoolFees(tokensBN(100));
+
+          await passBlockNumers(oneEpochs * EPOCH_DURATION);
+          await EPNSCoreV1Proxy.connect(ADMINSIGNER).daoHarvest();
+
+          const rewards_admin = await EPNSCoreV1Proxy.usersRewardsClaimed(
+            ADMIN
+          );
+
+          expect(
+            ethers.BigNumber.from(rewards_admin)
+          ).to.equal(ethers.utils.parseEther("300"));
+        });
+      });
+
       /**
        * Harvest And Reward Temp Tests - To be Categorized in specific test Case boxes later
        * -- LEVEL 1 Basic Tests --
