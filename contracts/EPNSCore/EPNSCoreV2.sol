@@ -73,7 +73,7 @@ contract PushCoreV2 is
         address indexed newOwner
     );
     event Staked(address indexed user, uint256 indexed amountStaked);
-    event UnStaked(address indexed user, uint256 indexed amountUnstaked);
+    event Unstaked(address indexed user, uint256 indexed amountUnstaked);
     event RewardsHarvested(
         address indexed user,
         uint256 indexed rewardAmount,
@@ -833,6 +833,7 @@ contract PushCoreV2 is
      **/
     function stake(uint256 _amount) external {
         _stake(msg.sender, _amount);
+        emit Staked(msg.sender, _amount);
     }
 
     function _stake(address _staker, uint256 _amount) private {
@@ -881,10 +882,10 @@ contract PushCoreV2 is
             "PushCoreV2::unstake: Invalid Caller"
         );
         harvestAll();
-
+        uint256 stakedAmount = userFeesInfo[msg.sender].stakedAmount;
         IERC20(PUSH_TOKEN_ADDRESS).safeTransfer(
             msg.sender,
-            userFeesInfo[msg.sender].stakedAmount
+            stakedAmount
         );
 
         // Adjust user and total rewards, piggyback method
@@ -895,6 +896,8 @@ contract PushCoreV2 is
 
         userFeesInfo[msg.sender].stakedAmount = 0;
         userFeesInfo[msg.sender].stakedWeight = 0;
+
+        emit Unstaked(msg.sender, stakedAmount);
     }
 
     /**
